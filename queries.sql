@@ -15,7 +15,7 @@ insert into owners (full_name, email) select 'Owner ' || generate_series(1,25000
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Optimization
--- Bofore
+-- Before
 EXPLAIN ANALYZE SELECT COUNT(*) FROM visits;
 
 -- "Finalize Aggregate  (cost=39149.42..39149.43 rows=1 width=8) (actual time=750.313..781.977 rows=1 loops=1)"
@@ -40,3 +40,34 @@ EXPLAIN ANALYZE SELECT COUNT(*) FROM visits where animal_id = 4;
 -- "Planning Time: 0.331 ms"
 -- "Execution Time: 450.948 ms"
 
+--Before 
+EXPLAIN ANALYZE SELECT * FROM visits;
+-- "Seq Scan on visits  (cost=0.00..55371.80 rows=3594280 width=16) (actual time=0.082..739.834 rows=3594280 loops=1)"
+-- "Planning Time: 0.109 ms"
+-- "Execution Time: 1083.742 ms"
+
+-- After
+EXPLAIN ANALYZE SELECT * FROM visits where vet_id = 2;
+-- "Seq Scan on visits  (cost=0.00..64357.50 rows=898091 width=16) (actual time=0.083..646.533 rows=898570 loops=1)"
+-- "  Filter: (vet_id = 2)"
+-- "  Rows Removed by Filter: 2695710"
+-- "Planning Time: 0.125 ms"
+-- "Execution Time: 681.211 ms"
+
+
+-- After
+EXPLAIN ANALYZE SELECT * FROM owners;
+-- "Seq Scan on owners  (cost=0.00..47352.00 rows=2500000 width=43) (actual time=0.085..598.844 rows=2500000 loops=1)"
+-- "Planning Time: 0.094 ms"
+-- "Execution Time: 720.713 ms"
+
+-- Before
+EXPLAIN ANALYZE SELECT * FROM owners where email = 'owner_18327@mail.com';
+-- "Gather  (cost=1000.00..36372.93 rows=1 width=43) (actual time=16.745..615.125 rows=1 loops=1)"
+-- "  Workers Planned: 2"
+-- "  Workers Launched: 2"
+-- "  ->  Parallel Seq Scan on owners  (cost=0.00..35372.83 rows=1 width=43) (actual time=304.454..501.629 rows=0 loops=3)"
+-- "        Filter: ((email)::text = 'owner_18327@mail.com'::text)"
+-- "        Rows Removed by Filter: 833333"
+-- "Planning Time: 0.119 ms"
+-- "Execution Time: 615.153 ms"
