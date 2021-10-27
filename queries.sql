@@ -55,13 +55,13 @@ EXPLAIN ANALYZE SELECT * FROM visits where vet_id = 2;
 -- "Execution Time: 681.211 ms"
 
 
--- After
+-- Before
 EXPLAIN ANALYZE SELECT * FROM owners;
 -- "Seq Scan on owners  (cost=0.00..47352.00 rows=2500000 width=43) (actual time=0.085..598.844 rows=2500000 loops=1)"
 -- "Planning Time: 0.094 ms"
 -- "Execution Time: 720.713 ms"
 
--- Before
+-- After
 EXPLAIN ANALYZE SELECT * FROM owners where email = 'owner_18327@mail.com';
 -- "Gather  (cost=1000.00..36372.93 rows=1 width=43) (actual time=16.745..615.125 rows=1 loops=1)"
 -- "  Workers Planned: 2"
