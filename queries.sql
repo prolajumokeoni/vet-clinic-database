@@ -1,16 +1,3 @@
--- Create database
-CREATE DATABASE schemadb;
--- Insert data
-INSERT INTO animals (name) VALUES ('Agumon'), ('Gabumon'), ('Pikachu'), ('Devimon'), ('Charmander'), ('Plantmon'), ('Squirtle'), ('Angemon'), ('Boarmon'), ('Blossom');
-INSERT INTO vets (name) VALUES ('William Tatcher'), ('Maisy Smith'), ('Stephanie Mendez'), ('Jack Harkness');
-
--- Add an email column to your owners table
-ALTER TABLE owners ADD COLUMN email VARCHAR(120);
--- This will add 3.594.280 visits considering you have 10 animals, 4 vets, and it will use around ~87.000 timestamps (~4min approx.)
-INSERT INTO visits (animal_id, vet_id, date_of_visit) SELECT * FROM (SELECT id FROM animals) animal_ids, (SELECT id FROM vets) vets_ids, generate_series('1980-01-01'::timestamp, '2021-01-01', '4 hours') visit_timestamp;
--- This will add 2.500.000 owners with full_name = 'Owner <X>' and email = 'owner_<X>@email.com' (~2min approx.)
-insert into owners (full_name, email) select 'Owner ' || generate_series(1,2500000), 'owner_' || generate_series(1,2500000) || '@mail.com';
-
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -29,16 +16,16 @@ EXPLAIN ANALYZE SELECT COUNT(*) FROM visits;
 
 -- After
 EXPLAIN ANALYZE SELECT COUNT(*) FROM visits where animal_id = 4;
--- "Finalize Aggregate  (cost=39520.46..39520.47 rows=1 width=8) (actual time=437.634..450.820 rows=1 loops=1)"
--- "  ->  Gather  (cost=39520.24..39520.45 rows=2 width=8) (actual time=437.487..450.811 rows=3 loops=1)"
+-- "Finalize Aggregate  (cost=6689.20..6689.21 rows=1 width=8) (actual time=224.268..251.655 rows=1 loops=1)"
+-- "  ->  Gather  (cost=6688.99..6689.20 rows=2 width=8) (actual time=221.619..251.643 rows=3 loops=1)"
 -- "        Workers Planned: 2"
 -- "        Workers Launched: 2"
--- "        ->  Partial Aggregate  (cost=38520.24..38520.25 rows=1 width=8) (actual time=365.103..365.103 rows=1 loops=3)"
--- "              ->  Parallel Seq Scan on visits  (cost=0.00..38149.21 rows=148414 width=0) (actual time=4.292..351.915 rows=119809 loops=3)"
--- "                    Filter: (animal_id = 4)"
--- "                    Rows Removed by Filter: 1078284"
--- "Planning Time: 0.331 ms"
--- "Execution Time: 450.948 ms"
+-- "        ->  Partial Aggregate  (cost=5688.99..5689.00 rows=1 width=8) (actual time=87.835..87.836 rows=1 loops=3)"
+-- "              ->  Parallel Index Only Scan using visits_animal_id_idx on visits  (cost=0.43..5321.07 rows=147166 width=0) (actual time=0.253..56.690 rows=119809 loops=3)"
+-- "                    Index Cond: (animal_id = 4)"
+-- "                    Heap Fetches: 0"
+-- "Planning Time: 0.348 ms"
+-- "Execution Time: 251.906 ms"
 
 --Before 
 EXPLAIN ANALYZE SELECT * FROM visits;
@@ -48,11 +35,13 @@ EXPLAIN ANALYZE SELECT * FROM visits;
 
 -- After
 EXPLAIN ANALYZE SELECT * FROM visits where vet_id = 2;
--- "Seq Scan on visits  (cost=0.00..64357.50 rows=898091 width=16) (actual time=0.083..646.533 rows=898570 loops=1)"
--- "  Filter: (vet_id = 2)"
--- "  Rows Removed by Filter: 2695710"
--- "Planning Time: 0.125 ms"
--- "Execution Time: 681.211 ms"
+-- "Bitmap Heap Scan on visits  (cost=10109.99..40883.44 rows=907556 width=16) (actual time=102.303..860.800 rows=898570 loops=1)"
+-- "  Recheck Cond: (vet_id = 2)"
+-- "  Heap Blocks: exact=19429"
+-- "  ->  Bitmap Index Scan on visits_vet_id_idx  (cost=0.00..9883.10 rows=907556 width=0) (actual time=92.762..92.763 rows=898570 loops=1)"
+-- "        Index Cond: (vet_id = 2)"
+-- "Planning Time: 0.241 ms"
+-- "Execution Time: 934.174 ms"
 
 
 -- Before
@@ -63,11 +52,7 @@ EXPLAIN ANALYZE SELECT * FROM owners;
 
 -- After
 EXPLAIN ANALYZE SELECT * FROM owners where email = 'owner_18327@mail.com';
--- "Gather  (cost=1000.00..36372.93 rows=1 width=43) (actual time=16.745..615.125 rows=1 loops=1)"
--- "  Workers Planned: 2"
--- "  Workers Launched: 2"
--- "  ->  Parallel Seq Scan on owners  (cost=0.00..35372.83 rows=1 width=43) (actual time=304.454..501.629 rows=0 loops=3)"
--- "        Filter: ((email)::text = 'owner_18327@mail.com'::text)"
--- "        Rows Removed by Filter: 833333"
--- "Planning Time: 0.119 ms"
--- "Execution Time: 615.153 ms"
+-- "Seq Scan on owners  (cost=0.00..12.88 rows=1 width=324) (actual time=0.056..0.057 rows=0 loops=1)"
+-- "  Filter: ((email)::text = 'owner_18327@mail.com'::text)"
+-- "Planning Time: 0.320 ms"
+-- "Execution Time: 0.087 ms"

@@ -45,3 +45,9 @@ CREATE TABLE visits(
   date_of_visit DATE,
   PRIMARY KEY(id)
 );
+
+CREATE INDEX ON visits (animal_id);
+
+CREATE INDEX ON visits (vet_id);
+
+CREATE INDEX ON owners ((lower(email)))
